@@ -1,0 +1,82 @@
+substitutions:
+  # UART nastavení pro Modbus
+  uart_tx_pin: "GPIO13"
+  uart_rx_pin: "GPIO14"
+  uart_baud_rate: "9600"
+  # I2C nastavení
+  i2c_sda_pin: "GPIO4"
+  i2c_scl_pin: "GPIO5"
+  i2c_frequency: "300000"
+
+# Přidání cesty k custom komponentám
+external_components:
+  - source:
+      type: local
+      path: custom_components
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    version: recommended
+  flash_size: 16MB
+  partitions: "partitions-16MB.csv"
+
+esphome:
+  name: esp32-mqtt
+  friendly_name: esp32-mqtt
+  project:
+    name: "esp32.mqtt"
+    version: "1.0.0"
+  on_boot:
+    priority: 600
+    then:   
+      - output.set_level:
+          id: dac1_output
+          level: 0
+
+# MQTT konfigurace - topic_prefix bude nastaven dynamicky
+mqtt:
+  id: mqtt_client  # Důležité! Musí mít ID
+  broker: !secret mqtt_broker
+  port: !secret mqtt_port
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  certificate_authority: !secret mqtt_ssl_cert
+  topic_prefix: "temp"  # Dočasný prefix - bude nahrazen dynamickým
+  discovery: true
+  discovery_prefix: "temp"  # Dočasný prefix - bude nahrazen dynamickým
+  reboot_timeout: 0s
+  birth_message:
+    topic: "temp/status"
+    payload: "online"
+  will_message:
+    topic: "temp/status"
+    payload: "offline"
+
+# Custom komponenta pro dynamické MQTT - MUSÍ BÝT PO mqtt: sekci
+dynamic_mqtt:
+  id: dynamic_mqtt_component
+
+ethernet:
+  type: LAN8720
+  mdc_pin: "GPIO23"
+  mdio_pin: "GPIO18"
+  clk_mode: "GPIO17_OUT"
+  phy_addr: "0"
+  manual_ip:
+    static_ip: !secret ethernet_static_ip
+    gateway: !secret ethernet_gateway
+    subnet: !secret ethernet_subnet
+    dns1: !secret ethernet_dns1
+    dns2: !secret ethernet_dns2
+
+mdns:
+  disabled: false
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+
+
